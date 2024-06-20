@@ -1,0 +1,12 @@
+Flask
+requests
+beautifulsoup4
+plotly
+pandas
+numpy
+scikit-learn
+nltk
+Flask-Cors
+matplotlib
+textblob
+cachetools

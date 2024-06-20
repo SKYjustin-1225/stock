@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最新股票新聞和數據</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="my-4">最新股票新聞和數據</h1>
+        <div class="form-group">
+            <label for="stockSelector">選擇股票:</label>
+            <select class="form-control" id="stockSelector">
+                <option value="" selected disabled>選擇一支股票</option>
+                <option value="AAPL">AAPL</option>
+                <option value="GOOGL">GOOGL</option>
+                <option value="MSFT">MSFT</option>
+                <option value="AMZN">AMZN</option>
+                <option value="TSLA">TSLA</option>
+            </select>
+        </div>
+        <div id="stockDataContainer">
+            <!-- 股票數據將會顯示在這裡 -->
+        </div>
+        <div id="stockNewsContainer">
+            <!-- 股票新聞將會顯示在這裡 -->
+        </div>
+        <div id="stockChartContainer" style="height: 500px;">
+            <!-- Plotly 圖表將在此顯示 -->
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#stockSelector').change(function() {
+                var selectedStock = $(this).val();
+        
+                // 請求股票數據
+                $.getJSON(`/api/stock/${selectedStock}`, function(stockData) {
+                    console.log('接收到股票數據:', stockData);
+                    updateStockData(stockData);
+                });
+        
+                // 請求股票新聞
+                $.getJSON(`/api/news/${selectedStock}`, function(stockNews) {
+                    console.log('接收到股票新聞:', stockNews);
+                    updateStockNews(stockNews);
+                });
+        
+                // 定義更新股票數據的函數
+                function updateStockData(data) {
+                    var htmlContent = '<h3>股票數據</h3><ul>';
+                    for (var key in data) {
+                        if (data.hasOwnProperty(key)) {
+                            var entry = data[key];
+                            htmlContent += `<li>日期: ${new Date(parseInt(key) * 1000).toLocaleDateString()} - 開盤價: ${entry.open}, 收盤價: ${entry.close}, 最高價: ${entry.high}, 最低價: ${entry.low}, 成交量: ${entry.volume}</li>`;
+                        }
+                    }
+                    htmlContent += '</ul>';
+                    $('#stockDataContainer').html(htmlContent);
+                    var dates = Object.keys(data).map(key => new Date(parseInt(key) * 1000).toLocaleDateString());
+                    var prices = Object.keys(data).map(key => data[key].close);
+
+                    var trace = {
+                        x: dates,
+                        y: prices,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: '收盤價'
+                    };
+
+                    var layout = {
+                        title: '股票價格走勢圖',
+                        xaxis: {
+                            title: '日期'
+                        },
+                        yaxis: {
+                            title: '股票價格'
+                        }
+                    };
+                    
+                    Plotly.newPlot('stockChartContainer', [trace], layout);
+                }
+        
+                // 定義更新股票新聞的函數
+                function updateStockNews(news) {
+                    var htmlContent = '<h3>股票新聞</h3><ul>';
+                    news.forEach(function(article) {
+                        htmlContent += `<li><a href="${article.url}" target="_blank">${article.title}</a> (情緒: ${article.sentiment || '無'})</li>`;
+                    });
+                    htmlContent += '</ul>';
+                    $('#stockNewsContainer').html(htmlContent);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
